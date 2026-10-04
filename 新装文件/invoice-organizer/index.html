@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>发票报销台</title>
+<style>
+  :root{
+    --bg:#f4f6fb; --card:#ffffff; --ink:#1f2933; --muted:#667085; --line:#e5e8ef;
+    --primary:#3b5bdb; --primary-d:#2f49b0; --accent:#0ca678; --danger:#e03131;
+    --amber:#f08c00; --shadow:0 1px 3px rgba(16,24,40,.08),0 1px 2px rgba(16,24,40,.06);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    background:var(--bg);color:var(--ink);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1240px;margin:0 auto;padding:20px 20px 60px}
+  header.top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px;flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:12px}
+  .logo{width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,var(--primary),var(--accent));
+    display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;font-weight:700;box-shadow:var(--shadow)}
+  .brand h1{font-size:19px;font-weight:700;letter-spacing:.5px}
+  .brand p{font-size:12px;color:var(--muted);margin-top:2px}
+  .top-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .btn{border:1px solid var(--line);background:#fff;color:var(--ink);padding:8px 14px;border-radius:8px;
+    cursor:pointer;font-size:13px;font-weight:600;transition:.15s;display:inline-flex;align-items:center;gap:6px}
+  .btn:hover{border-color:var(--primary);color:var(--primary)}
+  .btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+  .btn.primary:hover{background:var(--primary-d);color:#fff}
+  .btn.ghost{background:transparent}
+  .btn.danger{color:var(--danger);border-color:#ffc9c9}
+  .btn.danger:hover{background:#fff0f0}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:14px;margin-bottom:16px}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;box-shadow:var(--shadow)}
+  .kpi .lab{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+  .kpi .val{font-size:23px;font-weight:700;margin-top:6px;letter-spacing:.3px}
+  .kpi .sub{font-size:11px;color:var(--muted);margin-top:2px}
+  .dot{width:8px;height:8px;border-radius:50%}
+  .charts{display:grid;grid-template-columns:340px 1fr 1fr;gap:14px;margin-bottom:16px}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;box-shadow:var(--shadow)}
+  .panel h3{font-size:13px;font-weight:700;color:var(--muted);margin-bottom:12px;letter-spacing:.5px}
+  .legend{display:flex;flex-wrap:wrap;gap:8px 14px;margin-top:10px}
+  .legend span{font-size:12px;color:var(--ink);display:inline-flex;align-items:center;gap:6px}
+  .bar-tip{font-size:11px;color:var(--muted);margin-top:8px}
+  .tax-tip{font-size:12px;color:var(--muted);margin-top:8px;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:8px 10px}
+  .tax-tip b{color:var(--amber)}
+  .bud-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:12px}
+  .bud-row .nm{width:74px;color:var(--ink);flex:none}
+  .bud-bar{flex:1;height:14px;background:#eef1f6;border-radius:7px;overflow:hidden;position:relative}
+  .bud-bar i{display:block;height:100%;background:var(--accent);border-radius:7px}
+  .bud-bar i.over{background:var(--danger)}
+  .bud-row .pc{width:52px;text-align:right;color:var(--muted);flex:none}
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+  .toolbar input,.toolbar select{border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px;
+    background:#fff;color:var(--ink);outline:none}
+  .toolbar input:focus,.toolbar select:focus{border-color:var(--primary)}
+  .toolbar .grow{flex:1;min-width:160px}
+  table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:12px;
+    overflow:hidden;box-shadow:var(--shadow);font-size:13px}
+  thead th{background:#f8f9fc;text-align:left;font-size:12px;color:var(--muted);font-weight:700;padding:11px 10px;
+    border-bottom:1px solid var(--line);white-space:nowrap}
+  tbody td{padding:9px 10px;border-bottom:1px solid #f1f3f7;font-size:13px;vertical-align:middle}
+  tbody tr:hover{background:#fafbff}
+  tbody tr.sel{background:#eef2ff}
+  tbody tr.deleted{opacity:.55}
+  .thumb{width:40px;height:40px;border-radius:8px;object-fit:cover;background:#f1f3f7;border:1px solid var(--line)}
+  .thumb.ph{display:flex;align-items:center;justify-content:center;color:#adb5bd;font-size:16px}
+  .invno{font-weight:600;font-family:"SF Mono",Consolas,monospace;font-size:12px}
+  .amt{font-weight:700;font-variant-numeric:tabular-nums;text-align:right}
+  .tax{font-variant-numeric:tabular-nums;text-align:right;color:var(--muted)}
+  .badge{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11.5px;font-weight:700;color:#fff}
+  .cat-tag{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11.5px;background:#eef2ff;color:#3b5bdb;font-weight:600}
+  .proj-tag{display:inline-block;padding:1px 7px;border-radius:6px;font-size:11px;background:#e6fcf5;color:#0ca678;font-weight:600}
+  .ded-y{color:#0ca678;font-weight:700;font-size:12px}
+  .ded-n{color:#adb5bd;font-size:12px}
+  .row-act{display:flex;gap:6px;align-items:center}
+  .row-act select{border:1px solid var(--line);border-radius:6px;padding:4px 6px;font-size:12px;background:#fff}
+  td select[data-status]{border-radius:6px;padding:4px 8px;font-size:12px;background:#fff;cursor:pointer}
+  .icon-btn{border:1px solid var(--line);background:#fff;border-radius:6px;width:28px;height:28px;cursor:pointer;
+    color:var(--muted);font-size:14px;line-height:1}
+  .icon-btn:hover{border-color:var(--primary);color:var(--primary)}
+  .icon-btn.del:hover{border-color:var(--danger);color:var(--danger)}
+  .bulkbar{position:sticky;bottom:16px;display:none;align-items:center;gap:10px;background:var(--ink);color:#fff;
+    padding:10px 16px;border-radius:12px;box-shadow:0 8px 24px rgba(16,24,40,.25);margin-top:14px;flex-wrap:wrap}
+  .bulkbar .cnt{font-weight:700}
+  .bulkbar .btn{background:#fff;color:var(--ink);border:none}
+  .bulkbar .btn.primary{background:var(--primary);color:#fff}
+  .bulkbar .btn.danger{background:var(--danger);color:#fff}
+  .bulkbar select{border:none;border-radius:6px;padding:6px 8px;font-size:13px}
+  .empty{padding:46px 20px;text-align:center;color:var(--muted)}
+  .empty .big{font-size:34px;margin-bottom:8px}
+  #toast{position:fixed;right:20px;bottom:20px;display:flex;flex-direction:column;gap:8px;z-index:99}
+  .toast{background:var(--ink);color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;box-shadow:var(--shadow);
+    animation:slidein .2s ease;max-width:320px}
+  .toast.ok{background:#0b7285}.toast.err{background:#c92a2a}.toast.warn{background:#e8590c}
+  @keyframes slidein{from{transform:translateY(12px);opacity:0}to{transform:none;opacity:1}}
+  .modal-mask{position:fixed;inset:0;background:rgba(16,24,40,.45);display:none;align-items:center;justify-content:center;z-index:100}
+  .modal{background:#fff;border-radius:14px;padding:22px;max-width:440px;width:92%;box-shadow:0 20px 50px rgba(0,0,0,.3)}
+  .modal h3{font-size:16px;margin-bottom:14px}
+  .modal p{color:var(--muted);font-size:13px;margin-bottom:18px}
+  .modal .row{display:flex;gap:10px;justify-content:flex-end}
+  .fld{display:flex;gap:10px;align-items:center;margin-bottom:12px}
+  .fld label{width:96px;font-size:13px;color:var(--muted);flex:none}
+  .fld input,.fld select{flex:1;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px}
+  .fld .hint{font-size:11px;color:#adb5bd;width:96px;flex:none;text-align:right}
+  .spin{display:inline-block;width:14px;height:14px;border:2px solid #cdd3e0;border-top-color:var(--primary);
+    border-radius:50%;animation:rot .7s linear infinite;vertical-align:-2px}
+  @keyframes rot{to{transform:rotate(360deg)}}
+  @media(max-width:980px){.charts{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="logo">票</div>
+      <div>
+        <h1>发票报销台</h1>
+        <p>数据存于 OneDrive · 多机共享 · 本地免费 · 进项税自动核算</p>
+      </div>
+    </div>
+    <div class="top-actions">
+      <button class="btn ghost" id="btnSync"><span id="syncSpin"></span>同步 / 刷新</button>
+      <button class="btn" id="btnBudget">⚙ 预算设置</button>
+      <button class="btn" id="btnTaxRules">⚖ 税率规则</button>
+      <button class="btn" id="btnLedger">📒 财务台账</button>
+      <button class="btn" id="btnReimburse">🧾 生成报销单</button>
+      <button class="btn primary" id="btnNew">+ 录入发票</button>
+    </div>
+  </header>
+
+  <section class="kpis" id="kpis"></section>
+
+  <section class="charts">
+    <div class="panel">
+      <h3>消费类别占比</h3>
+      <div id="donut"></div>
+      <div class="legend" id="donutLegend"></div>
+    </div>
+    <div class="panel">
+      <h3>进项税结构（可抵扣 / 不可抵扣）</h3>
+      <div id="taxDonut"></div>
+      <div id="taxTip"></div>
+    </div>
+    <div class="panel">
+      <h3>近 6 个月趋势</h3>
+      <div id="bars"></div>
+      <div class="bar-tip" id="barTip"></div>
+      <h3 style="margin-top:14px">本月预算使用率</h3>
+      <div id="budgetBars"></div>
+    </div>
+  </section>
+
+  <div class="toolbar">
+    <input class="grow" id="kw" placeholder="搜索发票号 / 销方 / 备注…">
+    <select id="fCat"><option value="">全部类别</option></select>
+    <select id="fProj"><option value="">全部项目</option></select>
+    <select id="fDept"><option value="">全部部门</option></select>
+    <select id="fStatus">
+      <option value="">全部状态</option>
+      <option value="待报销">待报销</option>
+      <option value="已提交">已提交</option>
+      <option value="已报销">已报销</option>
+      <option value="已删除">回收站</option>
+    </select>
+    <select id="fSort">
+      <option value="date_desc">日期 ↓</option>
+      <option value="date_asc">日期 ↑</option>
+      <option value="amt_desc">金额 ↓</option>
+      <option value="amt_asc">金额 ↑</option>
+    </select>
+    <select id="fGroup" title="报销单聚合方式">
+      <option value="none">报销单：不分组</option>
+      <option value="project">报销单：按项目</option>
+      <option value="department">报销单：按部门</option>
+    </select>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width:32px"><input type="checkbox" id="selAll"></th>
+        <th style="width:50px">票样</th>
+        <th>发票号</th><th>日期</th><th>销方</th>
+        <th style="text-align:right">金额</th><th style="text-align:right">税额</th><th style="text-align:right">不含税</th>
+        <th>类别</th><th>项目</th><th>部门</th><th>进项税</th><th>状态</th><th style="width:90px">操作</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+  <div class="empty" id="empty" style="display:none">
+    <div class="big">🗂️</div><div>没有匹配的发票</div>
+  </div>
+
+  <div class="bulkbar" id="bulkbar">
+    <span class="cnt" id="bulkCnt">已选 0 张</span>
+    <button class="btn" id="bBulkExport">导出选中</button>
+    <button class="btn" id="bBulkPrint">打印 A4</button>
+    <button class="btn" id="bBulkReimburse">生成报销单</button>
+    <button class="btn" id="bBulkLedger">财务台账</button>
+    <select id="bBulkStatus">
+      <option value="">批量标记状态…</option>
+      <option value="待报销">待报销</option>
+      <option value="已提交">已提交</option>
+      <option value="已报销">已报销</option>
+    </select>
+    <button class="btn danger" id="bBulkDelete">删除</button>
+    <button class="btn ghost" id="bBulkClear" style="color:#fff">取消</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<div class="modal-mask" id="modal">
+  <div class="modal">
+    <h3 id="mTitle">确认操作</h3>
+    <p id="mMsg"></p>
+    <div class="row">
+      <button class="btn ghost" id="mCancel">取消</button>
+      <button class="btn danger" id="mOk">确认</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-mask" id="editModal">
+  <div class="modal">
+    <h3>编辑财务字段</h3>
+    <div class="fld"><label>归属项目</label><input id="eProj" placeholder="如：A项目"><span class="hint">留空=不归类</span></div>
+    <div class="fld"><label>归属部门</label><input id="eDept" placeholder="如：市场部"></div>
+    <div class="fld"><label>成本中心</label><input id="eCost" placeholder="可选"></div>
+    <div class="fld"><label>记账科目</label><input id="eSubj" placeholder="可选，如：管理费用-差旅"></div>
+    <div class="fld"><label>税率</label>
+      <select id="eRate"><option value="0.13">13%</option><option value="0.09">9%</option><option value="0.06">6%</option><option value="0.03">3%</option><option value="0">免税/0%</option></select>
+    </div>
+    <div class="fld"><label>可抵扣进项税</label>
+      <select id="eDed"><option value="1">是（专票）</option><option value="0">否（不可抵扣）</option></select>
+    </div>
+    <div class="row">
+      <button class="btn ghost" id="eCancel">取消</button>
+      <button class="btn primary" id="eSave">保存</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-mask" id="budgetModal">
+  <div class="modal">
+    <h3>预算设置（各类别月度限额）</h3>
+    <p>设置后首页显示使用率与超标预警。留空表示不设限。</p>
+    <div id="budgetFields"></div>
+    <div class="row">
+      <button class="btn ghost" id="bCancel">取消</button>
+      <button class="btn primary" id="bSave">保存预算</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-mask" id="taxRuleModal">
+  <div class="modal" style="max-width:560px">
+    <h3>税率规则配置</h3>
+    <p>维护「类别关键词 → 税率 → 是否可抵扣」映射；保存后可一键按规则重算现有发票税额。改动仅作默认建议，单行仍可在「✎编辑」里手动覆盖。</p>
+    <div id="taxRuleFields"></div>
+    <div class="row">
+      <button class="btn ghost" id="trCancel">取消</button>
+      <button class="btn" id="trRecalc">一键重算</button>
+      <button class="btn primary" id="trSave">保存规则</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const STATUS_COLOR={"待报销":"#f08c00","已提交":"#3b5bdb","已报销":"#0ca678","已删除":"#868e96"};
+const CAT_COLORS=["#3b5bdb","#0ca678","#e8590c","#9c36b5","#1098ad","#f59f00","#d6336c","#2b8a3e","#5c940d","#862e9c"];
+const $=(s)=>document.querySelector(s);
+const state={rows:[],stats:{},monthly:[],cats:[],tax:{},projects:[],departments:[],budget:{},taxRules:{},sel:new Set()};
+
+function toast(msg,type){const c=document.createElement('div');c.className='toast '+(type||'');c.textContent=msg;
+  $('#toast').appendChild(c);setTimeout(()=>{c.style.opacity=0;setTimeout(()=>c.remove(),300)},2600);}
+
+async function api(path,opts){const r=await fetch(path,opts);if(!r.ok)throw new Error('HTTP '+r.status);
+  const ct=r.headers.get('content-type')||'';return ct.includes('json')?r.json():r.text();}
+
+async function loadAll(){
+  try{
+    const [stats,rows,monthly,cats,tax,projects,departments,budget]=await Promise.all([
+      api('/api/stats'),api('/api/invoices'),api('/api/monthly?months=6'),api('/api/categories'),
+      api('/api/tax_summary'),api('/api/projects'),api('/api/departments'),api('/api/budget')]);
+    state.stats=stats;state.rows=rows;state.monthly=monthly;state.cats=cats;
+    state.tax=tax;state.projects=projects;state.departments=departments;state.budget=budget;
+    renderCatFilter();renderProjFilter();renderDeptFilter();
+    renderKPIs();renderCharts();renderBudgetBars();renderTable();
+  }catch(e){toast('加载失败：'+e.message,'err');}
+}
+
+function renderCatFilter(){
+  const sel=$('#fCat');const cur=sel.value;sel.innerHTML='<option value="">全部类别</option>';
+  state.cats.forEach(c=>{const o=document.createElement('option');o.value=c.category;o.textContent=c.category+' ('+c.count+')';sel.appendChild(o);});
+  sel.value=cur;
+}
+function renderProjFilter(){
+  const sel=$('#fProj');const cur=sel.value;sel.innerHTML='<option value="">全部项目</option>';
+  state.projects.forEach(p=>{const o=document.createElement('option');o.value=p.name;o.textContent=p.name+' ('+p.count+')';sel.appendChild(o);});
+  sel.value=cur;
+}
+function renderDeptFilter(){
+  const sel=$('#fDept');const cur=sel.value;sel.innerHTML='<option value="">全部部门</option>';
+  state.departments.forEach(d=>{const o=document.createElement('option');o.value=d.name;o.textContent=d.name+' ('+d.count+')';sel.appendChild(o);});
+  sel.value=cur;
+}
+
+function money(v){return '¥'+(Number(v||0)).toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function moneyShort(v){const n=Number(v||0);if(n>=10000)return '¥'+(n/10000).toFixed(1)+'万';return '¥'+n.toLocaleString('zh-CN',{minimumFractionDigits:0,maximumFractionDigits:0});}
+
+function renderKPIs(){
+  const s=state.stats;const total=s.total||0;const pend=s.pending_amount||0;
+  const reimb=(s.by_status&&s.by_status['已报销'])?s.by_status['已报销']:0;
+  const ded=state.tax.deductible_total||0;
+  let budPct='未设',budOver=false;
+  if(state.budget&&state.budget.rows&&state.budget.rows.length){
+    let used=0,limit=0;state.budget.rows.forEach(r=>{used+=r.used;limit+=r.limit;});
+    if(limit>0){const p=Math.round(used/limit*100);budPct=p+'%';budOver=p>100;}
+  }
+  const k=[
+    {lab:'发票总数',sub:'不含回收站',val:total,dot:'#3b5bdb'},
+    {lab:'待报销金额',sub:'待归集入账',val:moneyShort(pend),dot:'#f08c00'},
+    {lab:'已报销金额',sub:'已完成流程',val:moneyShort(reimb),dot:'#0ca678'},
+    {lab:'可抵扣进项税',sub:'专票税额合计',val:moneyShort(ded),dot:'#9c36b5'},
+    {lab:'本月预算使用率',sub:budOver?'已超标':'按类别限额',val:budPct,dot:budOver?'#e03131':'#1098ad'},
+  ];
+  $('#kpis').innerHTML=k.map(x=>`<div class="kpi"><div class="lab"><span class="dot" style="background:${x.dot}"></span>${x.lab}</div><div class="val">${x.val}</div><div class="sub">${x.sub}</div></div>`).join('');
+}
+
+function colorFor(cat,i){return CAT_COLORS[i%CAT_COLORS.length];}
+function polar(cx,cy,r,deg){const a=(deg-90)*Math.PI/180;return {x:cx+r*Math.cos(a),y:cy+r*Math.sin(a)};}
+function arc(cx,cy,r,a0,a1,color){const p0=polar(cx,cy,r,a0),p1=polar(cx,cy,r,a1);const large=(a1-a0)>180?1:0;
+  return `<path d="M ${p0.x} ${p0.y} A ${r} ${r} 0 ${large} 1 ${p1.x} ${p1.y}" fill="none" stroke="${color}" stroke-width="22"/>`;}
+
+function renderCharts(){
+  // 类别环图
+  const cats=state.stats.by_category||{};const entries=Object.entries(cats).sort((a,b)=>b[1]-a[1]);
+  const total=entries.reduce((s,e)=>s+e[1],0)||1;
+  const cx=70,cy=70,r=54;let a0=0;let segs='';
+  entries.forEach((e,i)=>{const frac=e[1]/total;const a1=a0+frac*360;segs+=arc(cx,cy,r,a0,a1,colorFor(e[0],i));a0=a1;});
+  $('#donut').innerHTML=`<svg width="180" height="160" viewBox="0 0 180 160"><g transform="translate(20,10)">${segs}<circle cx="${cx}" cy="${cy}" r="32" fill="#fff"/><text x="${cx}" y="${cy-4}" text-anchor="middle" font-size="13" font-weight="700" fill="#1f2933">${moneyShort(total)}</text><text x="${cx}" y="${cy+12}" text-anchor="middle" font-size="10" fill="#667085">合计</text></g></svg>`;
+  $('#donutLegend').innerHTML=entries.slice(0,6).map((e,i)=>`<span><span class="dot" style="background:${colorFor(e[0],i)}"></span>${e[0]} ${moneyShort(e[1])}</span>`).join('');
+  // 进项税环图
+  const ded=state.tax.deductible_total||0;const non=state.tax.nondeductible_total||0;const tt=ded+non||1;
+  let taxSeg=arc(70,70,54,0,ded/tt*360,'#0ca678');taxSeg+=arc(70,70,54,ded/tt*360,360,'#ced4da');
+  $('#taxDonut').innerHTML=`<svg width="180" height="160" viewBox="0 0 180 160"><g transform="translate(20,10)">${taxSeg}<circle cx="70" cy="70" r="32" fill="#fff"/><text x="70" y="66" text-anchor="middle" font-size="12" font-weight="700" fill="#0ca678">${moneyShort(ded)}</text><text x="70" y="82" text-anchor="middle" font-size="10" fill="#667085">可抵扣</text></g></svg>`;
+  const exp=state.tax.cert_expiring||[];
+  $('#taxTip').innerHTML = exp.length
+    ? `<div class="tax-tip">⚠️ 有 <b>${exp.length}</b> 张专票认证临期（90天内），最早：${exp[0].cert_due}</div>`
+    : `<div class="tax-tip" style="background:#e6fcf5;border-color:#b2f2e8;color:#0b7285">✓ 无可抵扣专票临期</div>`;
+  // 月度柱图
+  const m=state.monthly;const max=Math.max(1,...m.map(x=>x.amount));
+  const W=620,H=150,pad=30,bw=W/m.length*0.5;let bars='';
+  m.forEach((x,i)=>{const h=Math.max(3,x.amount/max*(H-pad-22));const x0=i*(W/m.length)+W/m.length*0.25;
+    bars+=`<rect x="${x0}" y="${H-pad-h}" width="${bw}" height="${h}" rx="4" fill="${colorFor(x.month,i)}"/>`;
+    bars+=`<text x="${x0+bw/2}" y="${H-pad+15}" text-anchor="middle" font-size="11" fill="#667085">${x.month.slice(2)}</text>`;
+    bars+=`<text x="${x0+bw/2}" y="${H-pad-h-6}" text-anchor="middle" font-size="10" fill="#adb5bd">${x.count}张</text>`;});
+  $('#bars').innerHTML=`<svg width="100%" viewBox="0 0 ${W} ${H}" style="height:auto">${bars}</svg>`;
+  $('#barTip').textContent='柱高=金额，顶部数字=当月张数';
+}
+
+function renderBudgetBars(){
+  const b=state.budget;const box=$('#budgetBars');
+  if(!b||!b.rows||!b.rows.length){box.innerHTML='<div class="bar-tip">未设置预算，点右上「⚙ 预算设置」</div>';return;}
+  box.innerHTML=b.rows.map(r=>{
+    const pct=r.limit>0?Math.round(r.used/r.limit*100):0;
+    return `<div class="bud-row"><span class="nm">${r.category}</span>
+      <span class="bud-bar"><i class="${r.over?'over':''}" style="width:${Math.min(100,pct)}%"></i></span>
+      <span class="pc" style="color:${r.over?'#e03131':'#667085'}">${pct}%</span></div>`;
+  }).join('');
+}
+
+function filtered(){
+  const kw=$('#kw').value.trim().toLowerCase();const cat=$('#fCat').value;const st=$('#fStatus').value;
+  const proj=$('#fProj').value;const dept=$('#fDept').value;const sort=$('#fSort').value;
+  let rows=state.rows.filter(r=>{
+    if(st&&r.status!==st)return false;
+    if(cat&&r.category!==cat)return false;
+    if(proj&&(r.project||'')!==proj)return false;
+    if(dept&&(r.department||'')!==dept)return false;
+    if(kw){const hay=(r.invoice_no+' '+(r.seller_name||'')+' '+(r.note||'')).toLowerCase();if(!hay.includes(kw))return false;}
+    return true;});
+  rows.sort((a,b)=>{if(sort==='date_desc')return (b.date||'')<(a.date||'')?-1:1;
+    if(sort==='date_asc')return (a.date||'')<(b.date||'')?-1:1;
+    if(sort==='amt_desc')return (b.amount||0)-(a.amount||0);
+    if(sort==='amt_asc')return (a.amount||0)-(b.amount||0);return 0;});
+  return rows;
+}
+
+function renderTable(){
+  const rows=filtered();const tb=$('#tbody');
+  $('#empty').style.display=rows.length?'none':'block';
+  tb.innerHTML=rows.map(r=>{
+    const deleted=r.status==='已删除';
+    const stc=STATUS_COLOR[r.status]||'#868e96';
+    const ded=r.is_deductible?`<span class="ded-y">可抵扣</span>`:`<span class="ded-n">不可抵</span>`;
+    const act=deleted
+      ? `<button class="btn ghost" data-restore="${r.id}" style="padding:4px 8px;font-size:12px">恢复</button>`
+      : `<button class="icon-btn" data-edit="${r.id}" title="编辑财务字段">✎</button>
+         <button class="icon-btn del" data-del="${r.id}" title="删除">🗑</button>`;
+    const stCell=deleted
+      ? `<span class="badge" style="background:${stc}">${r.status}</span>`
+      : `<select data-status="${r.id}" style="border:1px solid ${stc};color:${stc};font-weight:700">${['待报销','已提交','已报销'].map(s=>`<option ${s===r.status?'selected':''}>${s}</option>`).join('')}</select>`;
+    return `<tr class="${deleted?'deleted':''} ${state.sel.has(r.id)?'sel':''}" data-id="${r.id}">
+      <td><input type="checkbox" class="cb" data-id="${r.id}" ${state.sel.has(r.id)?'checked':''}></td>
+      <td><div class="thumb ph" data-thumb="${r.id}">🧾</div></td>
+      <td class="invno">${r.invoice_no||'—'}</td>
+      <td>${r.date||'—'}</td>
+      <td>${r.seller_name||'—'}</td>
+      <td class="amt">${money(r.amount)}</td>
+      <td class="tax">${money(r.tax_amount)}</td>
+      <td class="tax">${money(r.ex_tax_amount)}</td>
+      <td><span class="cat-tag">${r.category||'其他'}</span></td>
+      <td>${r.project?`<span class="proj-tag">${r.project}</span>`:'<span style="color:#adb5bd">—</span>'}</td>
+      <td>${r.department||'<span style="color:#adb5bd">—</span>'}</td>
+      <td>${ded}</td>
+      <td>${stCell}</td>
+      <td><div class="row-act">${act}</div></td>
+    </tr>`;}).join('');
+  tb.querySelectorAll('[data-thumb]').forEach(el=>{const id=el.getAttribute('data-thumb');
+    fetch('/api/thumb/'+id).then(r=>r.json()).then(j=>{if(j.img){el.classList.remove('ph');el.outerHTML=`<img class="thumb" src="${j.img}">`;}}).catch(()=>{});});
+  updateBulk();
+}
+
+function updateBulk(){
+  const n=state.sel.size;$('#bulkCnt').textContent='已选 '+n+' 张';
+  $('#bulkbar').style.display=n?'flex':'none';
+  const rows=filtered();$('#selAll').checked=rows.length>0&&rows.every(r=>state.sel.has(r.id));
+}
+
+async function setStatus(id,status){
+  try{const res=await api('/api/invoices/'+id+'/status',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({status})});
+    if(res.ok){toast('已标记为 '+status,'ok');await loadAll();}else toast(res.msg||'失败','err');}
+  catch(e){toast('失败：'+e.message,'err');}
+}
+async function doDelete(ids){
+  for(const id of ids){try{await api('/api/invoices/'+id+'/delete',{method:'POST'});}catch(e){toast('删除失败 id='+id,'err');}}
+  state.sel.clear();toast('已删除 '+ids.length+' 张（回收站可恢复）','ok');await loadAll();
+}
+async function doRestore(ids){
+  for(const id of ids){try{await api('/api/invoices/'+id+'/restore',{method:'POST'});}catch(e){}}
+  state.sel.clear();toast('已恢复','ok');await loadAll();
+}
+
+// 行内编辑财务字段
+let editId=null;
+function openEdit(id){
+  const r=state.rows.find(x=>x.id===id);if(!r)return;editId=id;
+  $('#eProj').value=r.project||'';$('#eDept').value=r.department||'';$('#eCost').value=r.cost_center||'';
+  $('#eSubj').value=r.account_subject||'';
+  $('#eRate').value=String(r.tax_rate!=null?r.tax_rate:0.13);
+  $('#eDed').value=r.is_deductible?'1':'0';
+  $('#editModal').style.display='flex';
+}
+async function saveEdit(){
+  if(editId==null)return;
+  const fields={
+    project:$('#eProj').value.trim(),department:$('#eDept').value.trim(),
+    cost_center:$('#eCost').value.trim(),account_subject:$('#eSubj').value.trim(),
+    tax_rate:parseFloat($('#eRate').value),is_deductible:parseInt($('#eDed').value,10)};
+  try{const res=await api('/api/invoices/'+editId+'/fields',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(fields)});
+    if(res.ok){toast('已保存财务字段','ok');$('#editModal').style.display='none';editId=null;await loadAll();}
+    else toast(res.msg||'失败','err');}
+  catch(e){toast('失败：'+e.message,'err');}
+}
+
+// 预算设置
+function openBudget(){
+  const cats=state.cats.map(c=>c.category);const cur=state.budget&&state.budget.rows?{}:{};
+  (state.budget.rows||[]).forEach(r=>cur[r.category]=r.limit);
+  $('#budgetFields').innerHTML=cats.map(c=>
+    `<div class="fld"><label>${c}</label><input id="bud_${c}" type="number" min="0" step="0.01" placeholder="月度限额(元)" value="${cur[c]||''}"></div>`
+  ).join('') || '<div class="bar-tip">暂无类别，先录入发票</div>';
+  $('#budgetModal').style.display='flex';
+}
+async function saveBudget(){
+  const cats=state.cats.map(c=>c.category);const b={};
+  cats.forEach(c=>{const v=parseFloat($('#bud_'+c).value);if(!isNaN(v)&&v>0)b[c]=v;});
+  try{const res=await api('/api/budget',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});
+    if(res.ok){toast('预算已保存','ok');$('#budgetModal').style.display='none';await loadAll();}
+    else toast(res.msg||'失败','err');}catch(e){toast('失败：'+e.message,'err');}
+}
+
+$('#tbody').addEventListener('change',e=>{if(e.target.classList.contains('cb')){const id=+e.target.dataset.id;
+  e.target.checked?state.sel.add(id):state.sel.delete(id);updateBulk();e.target.closest('tr').classList.toggle('sel',e.target.checked);}});
+$('#tbody').addEventListener('change',e=>{if(e.target.dataset&&e.target.dataset.status){setStatus(+e.target.dataset.status,e.target.value);}});
+$('#tbody').addEventListener('click',e=>{const d=e.target.dataset;
+  if(d.del){confirmModal('确认删除？','删除后可在「回收站」状态中恢复。',()=>doDelete([+d.del]));}
+  if(d.edit){openEdit(+d.edit);}
+  if(d.restore){doRestore([+d.restore]);}});
+$('#selAll').addEventListener('change',e=>{filtered().forEach(r=>{e.target.checked?state.sel.add(r.id):state.sel.delete(r.id);});renderTable();});
+['#kw','#fCat','#fProj','#fDept','#fStatus','#fSort'].forEach(s=>$(s).addEventListener('input',renderTable));
+$('#btnSync').addEventListener('click',async()=>{$('#syncSpin').innerHTML='<span class="spin"></span>';
+  try{await api('/api/sync');await loadAll();toast('已同步','ok');}catch(e){toast('同步失败','err');}finally{$('#syncSpin').innerHTML='';}});
+$('#btnNew').addEventListener('click',()=>toast('在 WorkBuddy 对话里直接发发票图即可自动录入','warn'));
+$('#btnBudget').addEventListener('click',openBudget);
+$('#bCancel').addEventListener('click',()=>{$('#budgetModal').style.display='none';});
+$('#bSave').addEventListener('click',saveBudget);
+$('#eCancel').addEventListener('click',()=>{$('#editModal').style.display='none';editId=null;});
+$('#eSave').addEventListener('click',saveEdit);
+function reimbUrl(){
+  const g=$('#fGroup').value;const ids=[...state.sel];
+  let u='/api/export_reimburse?group_by='+encodeURIComponent(g);
+  if(ids.length)u+='&ids='+ids.join(',');
+  return u;
+}
+$('#btnReimburse').addEventListener('click',()=>{window.open(reimbUrl());});
+$('#btnLedger').addEventListener('click',()=>{const ids=[...state.sel];
+  window.open('/api/export_ledger'+(ids.length?'?ids='+ids.join(','):''));});
+$('#bBulkClear').addEventListener('click',()=>{state.sel.clear();renderTable();});
+$('#bBulkExport').addEventListener('click',()=>{if(!state.sel.size)return;window.open('/api/export_excel?ids='+[...state.sel].join(','));});
+$('#bBulkPrint').addEventListener('click',()=>{if(!state.sel.size)return;window.open('/api/print_a4?ids='+[...state.sel].join(','));});
+$('#bBulkReimburse').addEventListener('click',()=>{if(!state.sel.size)return;window.open(reimbUrl());});
+$('#bBulkLedger').addEventListener('click',()=>{if(!state.sel.size)return;window.open('/api/export_ledger?ids='+[...state.sel].join(','));});
+$('#bBulkStatus').addEventListener('change',async e=>{const st=e.target.value;if(!st||!state.sel.size)return;
+  for(const id of state.sel){try{await api('/api/invoices/'+id+'/status',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:st})});}catch(_){}}
+  e.target.value='';toast('已批量标记 '+st,'ok');await loadAll();});
+$('#bBulkDelete').addEventListener('click',()=>{const ids=[...state.sel];confirmModal('确认删除 '+ids.length+' 张？','删除后可在「回收站」状态中恢复。',()=>doDelete(ids));});
+let modalOk=null;
+function confirmModal(title,msg,onOk){$('#mTitle').textContent=title;$('#mMsg').textContent=msg;modalOk=onOk;$('#modal').style.display='flex';}
+$('#mCancel').addEventListener('click',()=>{$('#modal').style.display='none';modalOk=null;});
+$('#mOk').addEventListener('click',()=>{const f=modalOk;$('#modal').style.display='none';modalOk=null;if(f)f();});
+[ '#editModal','#budgetModal' ].forEach(s=>$(s).addEventListener('click',e=>{if(e.target===$(s)){$(s).style.display='none';if(s==='#editModal')editId=null;}}));
+
+// 税率规则配置
+function openTaxRules(){
+  api('/api/tax_rules').then(rules=>{
+    state.taxRules=rules;
+    const rates=[0.13,0.09,0.06,0.03,0];
+    const ruleHtml=(rules.rules||[]).map((ru,i)=>`
+      <div class="fld"><label>规则${i+1} 关键词</label><input id="tr_kw_${i}" value="${(ru.keywords||[]).join('、')}"><span class="hint">用、分隔</span></div>
+      <div class="fld"><label>税率</label><select id="tr_rate_${i}">${rates.map(rt=>`<option value="${rt}" ${Math.abs(rt-(ru.tax_rate||0))<1e-6?'selected':''}>${rt*100}%</option>`).join('')}</select>
+        <label style="width:auto">可抵扣</label><select id="tr_ded_${i}"><option value="1" ${ru.is_deductible?'selected':''}>是</option><option value="0" ${!ru.is_deductible?'selected':''}>否</option></select></div>
+    `).join('');
+    $('#taxRuleFields').innerHTML=ruleHtml+`
+      <div class="fld" style="margin-top:8px;border-top:1px dashed #ddd;padding-top:10px"><label>默认税率</label><select id="tr_def_rate">${rates.map(rt=>`<option value="${rt}" ${Math.abs(rt-(rules.default_tax_rate||0.13))<1e-6?'selected':''}>${rt*100}%</option>`).join('')}</select>
+        <label style="width:auto">默认可抵扣</label><select id="tr_def_ded"><option value="1" ${rules.default_is_deductible?'selected':''}>是</option><option value="0" ${!rules.default_is_deductible?'selected':''}>否</option></select></div>`;
+    $('#taxRuleModal').style.display='flex';
+  }).catch(e=>toast('加载规则失败：'+e.message,'err'));
+}
+async function saveTaxRules(){
+  const n=(state.taxRules&&state.taxRules.rules)?state.taxRules.rules.length:0;
+  const rules=[];
+  for(let i=0;i<n;i++){
+    const kws=$('#tr_kw_'+i).value.split(/[、,，]/).map(s=>s.trim()).filter(Boolean);
+    if(!kws.length)continue;
+    rules.push({keywords:kws,tax_rate:parseFloat($('#tr_rate_'+i).value),is_deductible:$('#tr_ded_'+i).value==='1'});
+  }
+  const payload={rules,default_tax_rate:parseFloat($('#tr_def_rate').value),default_is_deductible:$('#tr_def_ded').value==='1'};
+  try{const res=await api('/api/tax_rules',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    if(res.ok)toast('税率规则已保存','ok');else toast(res.msg||'保存失败','err');}
+  catch(e){toast('保存失败：'+e.message,'err');}
+}
+async function recalcTax(){
+  try{const res=await api('/api/recalculate_tax',{method:'POST'});
+    if(res.ok){toast('已按规则重算 '+res.count+' 张','ok');$('#taxRuleModal').style.display='none';await loadAll();}
+    else toast(res.msg||'失败','err');}catch(e){toast('失败：'+e.message,'err');}
+}
+$('#btnTaxRules').addEventListener('click',openTaxRules);
+$('#trCancel').addEventListener('click',()=>{$('#taxRuleModal').style.display='none';});
+$('#trSave').addEventListener('click',saveTaxRules);
+$('#trRecalc').addEventListener('click',recalcTax);
+$('#taxRuleModal').addEventListener('click',e=>{if(e.target===$('#taxRuleModal'))$('#taxRuleModal').style.display='none';});
+
+loadAll();
+</script>
+</body>
+</html>
